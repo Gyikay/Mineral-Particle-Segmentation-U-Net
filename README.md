@@ -67,157 +67,39 @@ Mineral-Particle-Segmentation-U-Net/
 Note: Raw images and large datasets are not necessarily stored in the repository.
 Use data/README.md to explain where they can be obtained (e.g. Maerz, Fu & Aldrich datasets, internal plant images).
 
-**## 3. Methodology**
-# 3.1 Overall Approach
+## 3. Methodology
+
+This project followed a mixed MATLAB + Python workflow for semantic segmentation.
+
+---
+
+### 3.1 Case Study 1 — Auto-Labelled Images
+- MATLAB Auto Labeller used to generate pseudo-masks
+- Thresholding + morphological filtering + watershed
+- Masks refined in Image Segmenter
+- Not suitable for reliable U-Net training due to noise/merged fragments
+
+---
+
+### 3.2 Case Study 2 — Manually Labelled Ground Truth
+- MATLAB Image Labeller used to create accurate pixel-wise masks
+- Exported images + masks to Python for full U-Net training
+- TensorFlow/Keras model with:
+  - Binary Cross-Entropy + Dice loss
+  - Adam optimizer (1e-4) + early stopping
+- Augmentation used to simulate dataset variation
+- Evaluated on seen + unseen rock images
+
+---
+
+### 3.3 Case Study 3 — Benchmark Dataset (Fu & Aldrich 2023)
+- High-quality labelled dataset (4 images + masks)
+- Leave-One-Out Cross-Validation (4 folds)
+- Added:
+  - Foreground-biased patch sampling
+  - Border clearing to remove tray edge artifacts
+- Best generalisation performance across all cases
 
-The project uses a mixed MATLAB–Python workflow:
-
-MATLAB for data preparation, auto-labelling, and manual ground-truth creation.
-
-Python (TensorFlow/Keras) for U-Net model training, cross-validation, and quantitative evaluation.
-
-Across all cases, the core U-Net setup includes:
-
-Input size: 512 × 512 pixels
-
-Binary classes: rock (foreground) vs background
-
-Optimiser: Adam, learning rate 1e-4
-
-Loss: Binary Cross-Entropy + Dice loss (with variants such as Focal-Tversky in Case 3)
-
-Early stopping based on validation loss / Dice score
-
-# 3.2 Case Study 1 – Auto-Labelled Images (MATLAB Auto Labeller)
-
-Objective:
-Explore the feasibility of using automatically generated masks as pseudo-ground-truth for training a U-Net.
-
-Key steps:
-
-Dataset preparation
-
-Conveyor-belt rock image selected from Maerz (2001).
-
-RGB image converted to grayscale and paired with a binary mask.
-
-Auto-mask generation
-
-Adaptive local thresholding (adaptthresh, imbinarize).
-
-Morphological opening/closing (imopen, imclose) and small-object removal (bwareaopen).
-
-Optional distance transform + watershed to separate touching fragments.
-
-Refinement and verification
-
-Masks refined in MATLAB Image Segmenter: correction of edges, filling gaps.
-
-Refined masks saved under structured images/ and masks/ folders.
-
-Prototype U-Net attempt
-
-Baseline U-Net implemented in MATLAB Deep Learning Toolbox.
-
-Initial training halted due to format and label-quality issues; masks were corrected to binary, single-channel format.
-
-Due to poor, noisy labels and merged fragments, no full U-Net training was pursued in Case 1; it serves as a qualitative baseline and motivation for improved labelling.
-
-# 3.3 Case Study 2 – Manually Labelled Image (MATLAB + Python U-Net)
-
-Objective:
-Investigate how high-quality manual ground truth improves segmentation compared with auto-labelled watershed masks and assess generalisation to new images.
-
-Pipeline:
-
-Manual labelling in MATLAB
-
-High-resolution rock-fragment image imported into MATLAB Image Labeller.
-
-Each fragment manually outlined, producing an accurate pixel-level binary mask (1 = rock, 0 = background).
-
-Masks exported as image2_gt.png and stored as dataset_case2/images/ and dataset_case2/masks_GT/.
-
-Model training (Python)
-
-U-Net re-implemented in TensorFlow/Keras with encoder–decoder structure and skip connections.
-
-Configuration:
-
-Optimiser: Adam (lr = 1e-4)
-
-Loss: Binary Cross-Entropy + (1 – Dice)
-
-Batch size: 8
-
-Max epochs: 40 with early stopping (patience = 5)
-
-Callbacks: ModelCheckpoint for best validation Dice
-
-Images and masks:
-
-Normalised to [0, 1]
-
-Resized to 512 × 512
-
-Augmented (rotation, flips, brightness/contrast changes).
-
-Validation and testing
-
-Cropped into overlapping tiles; 80% used for training and 20% for validation.
-
-Inference performed on:
-
-The training image (for sanity check).
-
-Two unseen images (image_rock_on_a_conveyor_belt.png, rocks_on_lid.png) to test generalisation.
-
-Metrics & post-processing
-
-Accuracy, Precision, Recall, Dice, IoU, Specificity, and Boundary F1 (±3 px).
-
-Post-processing: border clearing, morphological filtering, small-object removal to refine masks.
-
-# 3.4 Case Study 3 – Pre-Labelled Benchmark Dataset (Fu & Aldrich, 2023)
-
-Objective:
-Benchmark the U-Net on a pre-labelled, high-quality dataset and evaluate robustness using Leave-One-Out Cross-Validation (LOOCV).
-
-Dataset:
-
-Four RGB images of rock fragments on circular trays with corresponding binary masks.
-
-Provided by Fu & Aldrich (2023).
-
-Stored in aligned images/ and masks/ folders (e.g., image1.png ↔ image1.png).
-
-A strict pairing function (list_pairs_strict()) verifies one-to-one mapping.
-
-Training configuration:
-
-Input size: 512 × 512 × 3
-
-Optimiser: Adam (lr = 1e-3)
-
-Loss: Focal-Tversky / BCE + Dice (for class imbalance)
-
-Batch size: 4
-
-Epochs: 40 with early stopping after 6 epochs of no improvement
-
-Cross-validation: 4-fold LOOCV (3 images train, 1 test per fold).
-
-Data handling:
-
-On-the-fly augmentation: random flips, small rotations, brightness/contrast changes.
-
-Foreground-biased patch sampling ensures ≈60% of training patches contain rock pixels, preventing collapse to background.
-
-Post-processing:
-
-clear_border() removes rock regions connected to image edges (tray rim artefacts).
-
-Predictions saved as binary PNGs and compared against ground truth using IoU and Dice.
 
 ## 4. Results Summary
 # 4.1 Case 1 – Auto-Labelled Masks (No Training)

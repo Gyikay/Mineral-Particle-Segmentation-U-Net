@@ -31,7 +31,6 @@ The core research questions are:
 
 ## 2. Repository Structure
 
-Suggested layout for this repository:
 
 ```text
 Mineral-Particle-Segmentation-U-Net/

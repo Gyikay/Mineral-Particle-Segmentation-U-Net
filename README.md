@@ -67,7 +67,7 @@ Mineral-Particle-Segmentation-U-Net/
 Note: Raw images and large datasets are not necessarily stored in the repository.
 Use data/README.md to explain where they can be obtained (e.g. Maerz, Fu & Aldrich datasets, internal plant images).
 
-## 3. Methodology
+**## 3. Methodology**
 
 This project followed a mixed MATLAB + Python workflow for semantic segmentation.
 
